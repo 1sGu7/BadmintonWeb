@@ -12,7 +12,9 @@ const PORT = process.env.PORT || 3000;
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
-});
+})
+.then(() => console.log('✅ Đã kết nối MongoDB thành công'))
+.catch(err => console.error('❌ Lỗi kết nối MongoDB:', err));
 
 // Middleware
 app.use(fileUpload());
@@ -27,3 +29,5 @@ app.use('/products', productRoutes);
 app.get('/', (req, res) => res.redirect('/products'));
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+app.listen(PORT, () => console.log(`🚀 Server đang chạy trên port ${PORT}`));
