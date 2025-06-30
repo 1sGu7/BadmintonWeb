@@ -10,7 +10,7 @@ services:
       - ./public/images:/app/public/images
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "/healthcheck.sh"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 10s
       timeout: 5s
       retries: 10
