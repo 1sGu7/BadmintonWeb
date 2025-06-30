@@ -1,27 +1,28 @@
+version: '3.8'
+
 services:
   web:
     build: .
     container_name: web
-    ports:
-      - "3000:3000"
+    # CHỈNH SỬA: Xóa port mapping cho service web
     environment:
       - MONGODB_URI=${MONGODB_URI}
     volumes:
-      - ./app:/app/app
       - ./public/images:/app/public/images
     restart: unless-stopped
+    # Thêm healthcheck mới
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 30s  # Thêm thời gian chờ ban đầu
+      start_period: 30s
 
   nginx:
     image: nginx:alpine
     container_name: nginx
     ports:
-      - "80:80"
+      - "80:80"  # Giữ nguyên port 80 cho nginx
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
     depends_on:
