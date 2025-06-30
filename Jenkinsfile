@@ -68,7 +68,11 @@ pipeline {
             sh 'docker system prune -af'
         }
         failure {
-            // Gửi thông báo lỗi nếu cần
+            // Thêm bước để tránh lỗi cú pháp
+            echo 'Pipeline failed. Check the logs for details.'
+            
+            // Có thể thêm hành động khác như gửi email thông báo
+            // emailext subject: 'Pipeline Failed', body: 'Check ${BUILD_URL}'
         }
     }
 }
