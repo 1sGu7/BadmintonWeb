@@ -6,36 +6,29 @@ pipeline {
     }
 
     stages {
-        stage('Check Structure') {
+        stage('Cleanup') {
             steps {
-                sh '''
-                    echo "Cấu trúc thư mục:"
-                    ls -la
-                    echo "Nội dung thư mục app:"
-                    ls -la app/
-                '''
+                script {
+                    // Dừng và xóa container cũ
+                    sh 'docker-compose down --remove-orphans || true'
+                    
+                    // Giải phóng port 3000
+                    sh 'docker stop $(docker ps -q --filter ancestor=badminton-web-app) || true'
+                    sh 'docker rm $(docker ps -aq --filter ancestor=badminton-web-app) || true'
+                    
+                    // Xóa mạng cũ
+                    sh 'docker network prune -f'
+                }
             }
         }
+        
         stage('Build and Deploy') {
             steps {
                 script {
-                    sh 'docker-compose down --remove-orphans || true'
-                    
-                    // Build riêng service web để xem lỗi
-                    sh 'docker-compose build web'
-                    
-                    // Khởi động service web trước
-                    sh 'docker-compose up -d web'
-                    
-                    // Chờ và xem log web
-                    sh 'sleep 20'
+                    sh 'docker-compose up -d --build'
+                    sh 'sleep 30' // Chờ đủ thời gian khởi động
                     sh 'docker logs web'
-                    
-                    // Kiểm tra health status
-                    sh 'docker inspect --format="{{.State.Health.Status}}" web'
-                    
-                    // Nếu web healthy thì khởi động nginx
-                    sh 'docker-compose up -d nginx'
+                    sh 'docker-compose ps'
                 }
             }
         }
