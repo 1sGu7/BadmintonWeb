@@ -7,5 +7,8 @@ RUN npm install
 
 COPY . .
 
+# Tạo thư mục cho hình ảnh
+RUN mkdir -p public/images
+
 EXPOSE 3000
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
