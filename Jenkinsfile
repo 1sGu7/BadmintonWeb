@@ -18,23 +18,44 @@ pipeline {
             }
         }
         
+        stage('Debug Connection') {
+            steps {
+                script {
+                    // In giá trị MONGODB_URI (đã mask)
+                    sh 'echo "MONGODB_URI=${MONGODB_URI}" | sed \'s/:.*@/:*****@/\''
+                    
+                    // Test kết nối MongoDB bằng Node.js
+                    sh '''
+                        node -e "
+                          const mongoose = require('mongoose');
+                          const uri = process.env.MONGODB_URI;
+                          console.log('Testing MongoDB connection with URI:', uri.replace(/:[^@]+@/, ':*****@'));
+                          
+                          // Mã hóa URI
+                          const encodedURI = encodeURI(uri);
+                          console.log('Encoded URI:', encodedURI.replace(/:[^@]+@/, ':*****@'));
+                          
+                          mongoose.connect(encodedURI, { serverSelectionTimeoutMS: 5000 })
+                            .then(() => {
+                              console.log('✅ MongoDB connection successful');
+                              process.exit(0);
+                            })
+                            .catch(err => {
+                              console.error('❌ MongoDB connection failed:', err);
+                              process.exit(1);
+                            });
+                        "
+                    '''
+                }
+            }
+        }
+        
         stage('Build and Deploy') {
             steps {
                 script {
                     sh 'docker-compose up -d --build'
-                    
-                    // Chờ và debug
                     sh 'sleep 30'
-                    sh 'docker ps -a'
-                    sh 'docker logs web || true'
-                    
-                    // Kiểm tra healthcheck
-                    sh 'docker inspect --format="{{.State.Health.Status}}" web || true'
-                    sh 'docker exec web cat /healthcheck.sh || true'
-                    sh 'docker exec web curl -v http://localhost:3000/health || true'
-                    
-                    // Kiểm tra kết nối MongoDB
-                    sh 'docker exec web node -e "require(\'mongoose\').connect(process.env.MONGODB_URI).then(() => console.log(\'OK\')).catch(e => console.error(e))" || true'
+                    sh 'docker logs web'
                 }
             }
         }
@@ -45,6 +66,9 @@ pipeline {
             sh 'docker-compose logs --no-color > docker-logs.txt'
             archiveArtifacts artifacts: 'docker-logs.txt', fingerprint: true
             sh 'docker system prune -af'
+        }
+        failure {
+            // Gửi thông báo lỗi nếu cần
         }
     }
 }
