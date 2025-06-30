@@ -2,19 +2,19 @@ version: '3.8'
 
 services:
   web:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     container_name: web
     ports:
-      - "3000:3000"  # Giữ port gốc của ứng dụng
+      - "3000:3000"
     environment:
-      - MONGODB_URI=${MONGODB_URI}  # Sẽ được inject từ Jenkins
+      - MONGODB_URI=${MONGODB_URI}
+    volumes:
+      - ./public/images:/app/public/images  # Mount volume cho hình ảnh
     restart: unless-stopped
 
-  nginx-proxy:
+  nginx:
     image: nginx:alpine
-    container_name: nginx-proxy
+    container_name: nginx
     ports:
       - "80:80"
     volumes:
