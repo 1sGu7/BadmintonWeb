@@ -6,6 +6,16 @@ pipeline {
     }
 
     stages {
+        stage('Check Structure') {
+            steps {
+                sh '''
+                    echo "Cấu trúc thư mục:"
+                    ls -la
+                    echo "Nội dung thư mục app:"
+                    ls -la app/
+                '''
+            }
+        }
         stage('Build and Deploy') {
             steps {
                 script {
