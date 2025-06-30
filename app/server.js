@@ -14,7 +14,10 @@ mongoose.connect(process.env.MONGODB_URI, {
   useUnifiedTopology: true
 })
 .then(() => console.log('✅ Đã kết nối MongoDB thành công'))
-.catch(err => console.error('❌ Lỗi kết nối MongoDB:', err));
+.catch(err => {
+  console.error('❌ Lỗi kết nối MongoDB:', err);
+  console.error('❌ Connection string:', process.env.MONGODB_URI);
+});
 
 // Middleware
 app.use(fileUpload());
