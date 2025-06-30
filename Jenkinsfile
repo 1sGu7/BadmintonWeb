@@ -11,6 +11,12 @@ pipeline {
                 script {
                     sh 'docker-compose down --remove-orphans || true'
                     sh 'docker-compose up -d --build'
+                    
+                    // Thêm các lệnh kiểm tra
+                    sh 'sleep 10' // Đợi 10s cho container khởi động
+                    sh 'docker ps'
+                    sh 'docker logs web'
+                    sh 'docker logs nginx'
                 }
             }
         }
@@ -18,7 +24,7 @@ pipeline {
 
     post {
         always {
-            sh 'docker system prune -af'  // Dọn dẹp để tiết kiệm dung lượng
+            sh 'docker system prune -af'
         }
     }
 }
