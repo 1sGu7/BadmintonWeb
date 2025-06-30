@@ -2,26 +2,23 @@ pipeline {
     agent any
 
     environment {
-        MONGODB_URI = credentials('mongodb-atlas-uri')  # Tạo credential trong Jenkins
+        MONGODB_URI = credentials('mongodb-atlas-uri')
     }
 
     stages {
-        stage('Build Docker Image') {
+        stage('Build and Deploy') {
             steps {
                 script {
-                    docker.build("badminton-web")
+                    sh 'docker-compose down --remove-orphans || true'
+                    sh 'docker-compose up -d --build'
                 }
             }
         }
-        
-        stage('Deploy') {
-            steps {
-                script {
-                    sh 'docker stop badminton-web || true'
-                    sh 'docker rm badminton-web || true'
-                    sh "docker run -d -p 80:80 --name badminton-web -e MONGODB_URI='${env.MONGODB_URI}' badminton-web"
-                }
-            }
+    }
+
+    post {
+        always {
+            sh 'docker system prune -af'  // Dọn dẹp để tiết kiệm dung lượng
         }
     }
 }
