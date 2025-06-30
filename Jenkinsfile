@@ -2,7 +2,8 @@ pipeline {
     agent any
 
     environment {
-        MONGODB_URI = credentials('mongodb+srv://shop_user:shop_password@badminton-shop-cluster.wcjjhqv.mongodb.net/?retryWrites=true&w=majority&appName=badminton-shop-cluster')
+        MONGODB_URI = credentials('MONGODB_ATLAS_URI')
+        APP_PORT = "3000"
     }
 
     stages {
@@ -13,44 +14,61 @@ pipeline {
             }
         }
 
-        stage('Install Dependencies') {
+        
+        stage('Verify MongoDB Connection') {
             steps {
                 sh '''
-                    sudo apt-get update -y
-                    sudo apt-get install -y mongodb-clients
+                echo "Verifying MongoDB connection..."
+                mongosh "${MONGODB_URI}" --eval "db.runCommand({ping:1})"
                 '''
             }
         }
-
-        stage('Verify MongoDB Connection') {
+        
+        stage('Build') {
             steps {
-                script {
-                    try {
-                        sh """
-                            echo "Testing MongoDB connection to ${env.MONGODB_URI}"
-                            mongosh "${env.MONGODB_URI}" --eval "db.runCommand({ping:1})"
-                        """
-                    } catch (e) {
-                        error("MongoDB connection failed: ${e.getMessage()}")
-                    }
-                }
+                sh 'docker-compose build --no-cache'
             }
         }
         
-        // Thêm các stage build/deploy khác tại đây
-    }
-
-    post {
-        always {
-            node {
-                cleanWs()
+        stage('Deploy') {
+            steps {
+                sh '''
+                # Dừng dịch vụ chiếm port nếu cần
+                sudo systemctl stop nginx apache2 || true
+                sleep 2
+                
+                # Triển khai ứng dụng
+                docker-compose down || true
+                docker-compose up -d
+                '''
             }
         }
-        failure {
-            echo 'Build failed!'
+        
+        stage('Health Check') {
+            steps {
+                retry(5) {
+                    sh '''
+                    echo "Checking application health..."
+                    curl -Ifs http://localhost:${APP_PORT}/products
+                    '''
+                    sleep 10
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            cleanWs()
         }
         success {
-            echo 'Build succeeded!'
+            slackSend channel: '#deployments', 
+                      message: "SUCCESS: Deployment ${BUILD_URL} completed"
+        }
+        failure {
+            slackSend channel: '#deployments', 
+                      message: "FAILED: Deployment ${BUILD_URL} failed"
+            sh 'docker-compose down || true'
         }
     }
 }
