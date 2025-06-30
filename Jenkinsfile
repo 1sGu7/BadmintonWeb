@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        MONGODB_URI = credentials('MONGODB_ATLAS_URI')
+        MONGODB_URI = credentials('mongodb+srv://shop_user:shop_password@badminton-shop-cluster.wcjjhqv.mongodb.net/?retryWrites=true&w=majority&appName=badminton-shop-cluster')
         APP_PORT = "3000"
     }
 
