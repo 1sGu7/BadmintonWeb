@@ -2,16 +2,16 @@
   "name": "badmintonweb",
   "version": "1.0.0",
   "description": "",
-  "main": "server.js",
+  "main": "app/server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node app/server.js",
+    "test-mongo": "node -e \"const mongoose = require('mongoose'); const uri = process.env.MONGODB_URI; console.log('Testing MongoDB connection with URI:', uri.replace(/:[^@]+@/, ':*****@')); mongoose.connect(uri).then(() => { console.log('✅ Connection successful'); process.exit(0); }).catch(err => { console.error('❌ Connection failed:', err); process.exit(1); });\""
   },
   "dependencies": {
     "dotenv": "^16.3.1",
     "ejs": "^3.1.9",
     "express": "^4.18.2",
     "express-fileupload": "^1.4.3",
-    "mongoose": "^8.0.0",
-    "multer": "^1.4.5-lts.1"
+    "mongoose": "^8.0.0"
   }
 }
