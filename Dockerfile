@@ -4,6 +4,8 @@ WORKDIR /app
 
 COPY package*.json ./
 RUN npm install
+# Thêm dòng này để cài package cần thiết
+RUN npm install express-fileupload
 
 COPY . .
 
