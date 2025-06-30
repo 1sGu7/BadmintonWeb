@@ -43,9 +43,15 @@ connectToMongoDB();
 // Middleware
 app.use(fileUpload());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, '../public')));
-app.set('views', path.join(__dirname, '../views'));
+
+// SỬA ĐƯỜNG DẪN Ở ĐÂY:
+app.use(express.static(path.join(__dirname, 'public')));
+app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
+
+// Log để kiểm tra đường dẫn
+console.log('Views directory:', path.join(__dirname, 'views'));
+console.log('Public directory:', path.join(__dirname, 'public'));
 
 // Endpoint healthcheck
 app.get('/health', (req, res) => {
