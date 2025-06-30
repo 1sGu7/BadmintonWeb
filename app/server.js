@@ -9,17 +9,17 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Kết nối MongoDB
+console.log('Attempting to connect to MongoDB with URI:', process.env.MONGODB_URI);
+
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true,
-  auth: {
-    username: 'shop_user', // Thay bằng username thực tế
-    password: 'shop_password' // Thay bằng password thực tế
-  },
-  authSource: 'admin' // Thường là 'admin' cho MongoDB Atlas
+  useUnifiedTopology: true
 })
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => console.error('MongoDB connection error:', err));
+.then(() => console.log('✅ Connected to MongoDB'))
+.catch(err => {
+  console.error('❌ MongoDB connection error:', err);
+  process.exit(1); // Thoát nếu kết nối thất bại
+});
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
