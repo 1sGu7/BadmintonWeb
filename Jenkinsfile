@@ -10,13 +10,22 @@ pipeline {
             steps {
                 script {
                     sh 'docker-compose down --remove-orphans || true'
-                    sh 'docker-compose up -d --build'
                     
-                    // Thêm các lệnh kiểm tra
-                    sh 'sleep 10' // Đợi 10s cho container khởi động
-                    sh 'docker ps'
+                    // Build riêng service web để xem lỗi
+                    sh 'docker-compose build web'
+                    
+                    // Khởi động service web trước
+                    sh 'docker-compose up -d web'
+                    
+                    // Chờ và xem log web
+                    sh 'sleep 20'
                     sh 'docker logs web'
-                    sh 'docker logs nginx'
+                    
+                    // Kiểm tra health status
+                    sh 'docker inspect --format="{{.State.Health.Status}}" web'
+                    
+                    // Nếu web healthy thì khởi động nginx
+                    sh 'docker-compose up -d nginx'
                 }
             }
         }
