@@ -2,14 +2,15 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# Cài curl cho healthcheck
+RUN apk add --no-cache curl
+
 COPY package*.json ./
 RUN npm install
-# Thêm dòng này để cài package cần thiết
 RUN npm install express-fileupload
 
 COPY . .
 
-# Tạo thư mục cho hình ảnh
 RUN mkdir -p public/images
 
 EXPOSE 3000
