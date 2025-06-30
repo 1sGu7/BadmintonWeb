@@ -1,15 +1,102 @@
-name: Trigger Jenkins Deployment
-on:
-  push:
-    branches: [ main ]
-jobs:
-  trigger_jenkins:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Jenkins
-        uses: appleboy/jenkins-action@master
-        with:
-          url: "http://ec2-13-213-8-145.ap-southeast-1.compute.amazonaws.com:8080/"
-          user: "admin"
-          password: "0f484358ee8442db89b73e7738bcdad2"
-          job: "badminton-shop-deploy"
+pipeline {
+    agent any
+
+    environment {
+        MONGODB_URI = credentials('MONGODB_ATLAS_URI')
+        // Sử dụng biến môi trường cho port linh hoạt
+        APP_PORT = "3000"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', 
+                url: 'https://github.com/1sGu7/BadmintonWeb.git',
+                credentialsId: 'github-credentials' // Tạo credential trong Jenkins
+            }
+        }
+        
+        stage('Stop Conflicting Services') {
+            steps {
+                script {
+                    // Dừng các dịch vụ có thể chiếm port 80
+                    sh '''
+                        sudo systemctl stop nginx apache2 || true
+                        sudo pkill -f "docker-proxy.*:80" || true
+                        sleep 2
+                    '''
+                }
+            }
+        }
+        
+        stage('Cleanup Previous Deployment') {
+            steps {
+                sh 'docker-compose down --remove-orphans || true'
+                sh 'docker system prune -af || true' // Dọn dẹp Docker cache
+            }
+        }
+        
+        stage('Build Docker Images') {
+            steps {
+                sh 'docker-compose build --no-cache --pull'
+            }
+        }
+        
+        stage('Deploy Application') {
+            steps {
+                sh """
+                    # Khởi động MongoDB trước
+                    docker-compose up -d mongo
+                    
+                    # Chờ MongoDB sẵn sàng
+                    echo "Waiting for MongoDB to start..."
+                    sleep 15
+                    
+                    # Khởi động ứng dụng
+                    docker-compose up -d web
+                """
+            }
+        }
+        
+        stage('Health Check') {
+            steps {
+                script {
+                    // Thử tối đa 5 lần, mỗi lần cách nhau 10 giây
+                    retry(5) {
+                        sh """
+                            echo "Checking application health..."
+                            curl -Ifs http://localhost:${APP_PORT}/products
+                        """
+                        sleep 10
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            // Luôn dọn dẹp workspace
+            cleanWs()
+            
+            // Ghi log chi tiết
+            script {
+                sh 'docker-compose logs --tail 100 web'
+                sh 'docker ps -a'
+            }
+        }
+        success {
+            // Thông báo thành công
+            slackSend channel: '#deployments', 
+                      message: "SUCCESS: Deployment ${BUILD_URL} completed"
+        }
+        failure {
+            // Thông báo thất bại
+            slackSend channel: '#deployments', 
+                      message: "FAILED: Deployment ${BUILD_URL} failed"
+            
+            // Xóa container nếu deploy thất bại
+            sh 'docker-compose down || true'
+        }
+    }
+}
