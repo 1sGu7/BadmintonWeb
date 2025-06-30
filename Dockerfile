@@ -1,8 +1,5 @@
 FROM node:18-alpine
 
-# Cài curl cho healthcheck
-RUN apt-get update && apt-get install -y curl
-
 WORKDIR /app
 
 COPY package*.json ./
