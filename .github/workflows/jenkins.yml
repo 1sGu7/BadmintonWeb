@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         MONGODB_URI = credentials('MONGODB_ATLAS_URI')
-        // Sử dụng biến môi trường cho port linh hoạt
         APP_PORT = "3000"
     }
 
@@ -11,64 +10,64 @@ pipeline {
         stage('Checkout') {
             steps {
                 git branch: 'main', 
-                url: 'https://github.com/1sGu7/BadmintonWeb.git',
-                credentialsId: 'github-credentials' // Tạo credential trong Jenkins
+                url: 'https://github.com/1sGu7/BadmintonWeb.git'
             }
         }
         
-        stage('Stop Conflicting Services') {
+        stage('Install Dependencies') {
             steps {
-                script {
-                    // Dừng các dịch vụ có thể chiếm port 80
-                    sh '''
-                        sudo systemctl stop nginx apache2 || true
-                        sudo pkill -f "docker-proxy.*:80" || true
-                        sleep 2
-                    '''
-                }
+                sh '''
+                # Cài đặt mongosh nếu chưa có
+                if ! command -v mongosh &> /dev/null; then
+                    echo "Installing mongosh..."
+                    sudo apt update
+                    sudo apt install -y gnupg curl
+                    curl -fsSL https://pgp.mongodb.com/server-6.0.asc | sudo gpg -o /usr/share/keyrings/mongodb-server-6.0.gpg --dearmor
+                    echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-6.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+                    sudo apt update
+                    sudo apt install -y mongodb-mongosh
+                fi
+                '''
             }
         }
         
-        stage('Cleanup Previous Deployment') {
+        stage('Verify MongoDB Connection') {
             steps {
-                sh 'docker-compose down --remove-orphans || true'
-                sh 'docker system prune -af || true' // Dọn dẹp Docker cache
+                sh '''
+                echo "Verifying MongoDB connection..."
+                mongosh "${MONGODB_URI}" --eval "db.runCommand({ping:1})"
+                '''
             }
         }
         
-        stage('Build Docker Images') {
+        stage('Build') {
             steps {
-                sh 'docker-compose build --no-cache --pull'
+                sh 'docker-compose build --no-cache'
             }
         }
         
-        stage('Deploy Application') {
+        stage('Deploy') {
             steps {
-                sh """
-                    # Khởi động MongoDB trước
-                    docker-compose up -d mongo
-                    
-                    # Chờ MongoDB sẵn sàng
-                    echo "Waiting for MongoDB to start..."
-                    sleep 15
-                    
-                    # Khởi động ứng dụng
-                    docker-compose up -d web
-                """
+                sh '''
+                # Dừng dịch vụ chiếm port nếu cần
+                sudo systemctl stop nginx apache2 || true
+                sleep 2
+                
+                # Triển khai ứng dụng
+                docker-compose down || true
+                docker-compose up -d
+                '''
             }
         }
         
         stage('Health Check') {
             steps {
-                script {
-                    // Thử tối đa 5 lần, mỗi lần cách nhau 10 giây
-                    retry(5) {
-                        sh """
-                            echo "Checking application health..."
-                            curl -Ifs http://localhost:${APP_PORT}/products
-                        """
-                        sleep 10
-                    }
+                retry(5) {
+                    sh '''
+                    echo "Checking application health..."
+                    curl -Ifs http://localhost:${APP_PORT}/products
+                    '''
+                    sleep 10
                 }
             }
         }
@@ -76,26 +75,15 @@ pipeline {
     
     post {
         always {
-            // Luôn dọn dẹp workspace
             cleanWs()
-            
-            // Ghi log chi tiết
-            script {
-                sh 'docker-compose logs --tail 100 web'
-                sh 'docker ps -a'
-            }
         }
         success {
-            // Thông báo thành công
             slackSend channel: '#deployments', 
                       message: "SUCCESS: Deployment ${BUILD_URL} completed"
         }
         failure {
-            // Thông báo thất bại
             slackSend channel: '#deployments', 
                       message: "FAILED: Deployment ${BUILD_URL} failed"
-            
-            // Xóa container nếu deploy thất bại
             sh 'docker-compose down || true'
         }
     }
