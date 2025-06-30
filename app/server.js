@@ -24,6 +24,11 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
 // Routes
+// Thêm route healthcheck trước các route khác
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 app.use('/products', productRoutes);
 
 app.get('/', (req, res) => res.redirect('/products'));
