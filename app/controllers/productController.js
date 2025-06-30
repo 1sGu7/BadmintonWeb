@@ -1,10 +1,23 @@
 const Product = require('../models/Product');
 const path = require('path');
+const fs = require('fs');
+
+// Đảm bảo thư mục images tồn tại
+const ensureImagesDir = () => {
+  const imagesDir = path.join(__dirname, '../public/images');
+  if (!fs.existsSync(imagesDir)) {
+    fs.mkdirSync(imagesDir, { recursive: true });
+    console.log(`Created images directory: ${imagesDir}`);
+  }
+};
 
 exports.getAllProducts = async (req, res) => {
   try {
     const products = await Product.find();
-    res.render('products', { products });
+    res.render('products', { 
+      title: 'All Products',
+      products 
+    });
   } catch (err) {
     res.status(500).send(err.message);
   }
@@ -16,6 +29,8 @@ exports.getProductForm = (req, res) => {
 
 exports.createProduct = async (req, res) => {
   try {
+    ensureImagesDir(); // Đảm bảo thư mục images tồn tại
+    
     const { name, description, price, category } = req.body;
     
     // Xử lý upload ảnh
@@ -25,7 +40,9 @@ exports.createProduct = async (req, res) => {
 
     const imageFile = req.files.image;
     const imageName = `${Date.now()}-${imageFile.name}`;
-    const uploadPath = path.join(__dirname, '../../public/images', imageName);
+    
+    // SỬA ĐƯỜNG DẪN Ở ĐÂY:
+    const uploadPath = path.join(__dirname, '../public/images', imageName);
     
     // Lưu file vào thư mục public/images
     await imageFile.mv(uploadPath);
