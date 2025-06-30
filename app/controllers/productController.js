@@ -25,7 +25,7 @@ exports.createProduct = async (req, res) => {
 
     const imageFile = req.files.image;
     const imageName = `${Date.now()}-${imageFile.name}`;
-    const uploadPath = path.join(__dirname, '../public/images', imageName);
+    const uploadPath = path.join(__dirname, '../../public/images', imageName);
     
     // Lưu file vào thư mục public/images
     await imageFile.mv(uploadPath);
