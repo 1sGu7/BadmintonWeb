@@ -1,25 +1,16 @@
-FROM node:18-alpine
+FROM node:18-slim  # Sử dụng bản slim để giảm kích thước
 
 # Cài curl cho healthcheck
-RUN apk add --no-cache curl
+RUN apt-get update && apt-get install -y curl
 
-# Đặt WORKDIR là /app (giữ nguyên)
 WORKDIR /app
 
-# Copy package.json trước để tận dụng cache
 COPY package*.json ./
-
-# Cài đặt dependencies
 RUN npm install
 
-# Copy TOÀN BỘ project vào container
 COPY . .
 
-# Tạo thư mục hình ảnh
 RUN mkdir -p public/images
 
-# Kiểm tra cấu trúc thư mục
-RUN ls -la app/
-
-# Sử dụng server.js trong thư mục app
-CMD ["node", "app/server.js"]
+# Sử dụng script khởi động thông minh
+CMD ["sh", "-c", "node app/server.js & while ! curl -s http://localhost:3000/health >/dev/null; do sleep 1; done; wait"]
