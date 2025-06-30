@@ -19,35 +19,34 @@ pipeline {
         }
         
         stage('Debug Connection') {
-            steps {
-                script {
-                    // In giá trị MONGODB_URI (đã mask)
-                    sh 'echo "MONGODB_URI=${MONGODB_URI}" | sed \'s/:.*@/:*****@/\''
-                    
-                    // Test kết nối MongoDB bằng Node.js
-                    sh '''
-                        node -e "
-                          const mongoose = require('mongoose');
-                          const uri = process.env.MONGODB_URI;
-                          console.log('Testing MongoDB connection with URI:', uri.replace(/:[^@]+@/, ':*****@'));
-                          
-                          // Mã hóa URI
-                          const encodedURI = encodeURI(uri);
-                          console.log('Encoded URI:', encodedURI.replace(/:[^@]+@/, ':*****@'));
-                          
-                          mongoose.connect(encodedURI, { serverSelectionTimeoutMS: 5000 })
-                            .then(() => {
-                              console.log('✅ MongoDB connection successful');
-                              process.exit(0);
-                            })
-                            .catch(err => {
-                              console.error('❌ MongoDB connection failed:', err);
-                              process.exit(1);
-                            });
-                        "
-                    '''
-                }
+          steps {
+            script {
+              sh 'echo MONGODB_URI=**** | sed s/:.*@/:*****@/'
+              // Sử dụng container Node.js để chạy script
+              sh '''
+                docker run --rm -e MONGODB_URI=$MONGODB_URI \
+                -v "$PWD:/app" -w /app node:18-alpine \
+                sh -c "npm install mongoose@7.6.0 && node -e '
+                  const mongoose = require(\"mongoose\");
+                  const uri = process.env.MONGODB_URI;
+                  console.log(\"Testing MongoDB connection with URI:\", uri.replace(/:[^@]+@/, \":*****@\"));
+                  
+                  const encodedURI = encodeURI(uri);
+                  console.log(\"Encoded URI:\", encodedURI.replace(/:[^@]+@/, \":*****@\"));
+                  
+                  mongoose.connect(encodedURI, { serverSelectionTimeoutMS: 5000 })
+                    .then(() => {
+                      console.log(\"✅ MongoDB connection successful\");
+                      process.exit(0);
+                    })
+                    .catch(err => {
+                      console.error(\"❌ MongoDB connection failed:\", err);
+                      process.exit(1);
+                    });
+                '"
+              '''
             }
+          }
         }
         
         stage('Build and Deploy') {
