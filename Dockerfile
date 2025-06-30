@@ -1,4 +1,4 @@
-FROM node:18-slim  # Sử dụng bản slim để giảm kích thước
+FROM node:18-alpine
 
 # Cài curl cho healthcheck
 RUN apt-get update && apt-get install -y curl
