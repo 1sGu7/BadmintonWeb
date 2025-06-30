@@ -1,0 +1,23 @@
+version: '3.8'
+services:
+  web:
+    build: .
+    ports:
+      - "80:3000"
+    environment:
+      - MONGODB_URI=mongodb+srv://shop_user:<db_password>@badminton-shop-cluster.wcjjhqv.mongodb.net/?retryWrites=true&w=majority&appName=badminton-shop-cluster
+    restart: always
+  mongo:
+    image: mongo:6.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d:ro
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    restart: always
+
+volumes:
+  mongodb_data:

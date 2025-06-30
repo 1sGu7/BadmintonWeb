@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cửa hàng Cầu lông</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #4CAF50;
+        }
+        .add-product-btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .add-product-btn:hover {
+            background-color: #45a049;
+        }
+        .products-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+        }
+        .product-card {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .product-card:hover {
+            transform: translateY(-5px);
+        }
+        .product-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-bottom: 1px solid #eee;
+        }
+        .product-info {
+            padding: 15px;
+        }
+        .product-name {
+            font-size: 1.2rem;
+            margin-top: 0;
+            color: #333;
+        }
+        .product-description {
+            color: #666;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .product-price {
+            font-weight: bold;
+            color: #e53935;
+            font-size: 1.1rem;
+            margin: 10px 0;
+        }
+        .product-category {
+            display: inline-block;
+            background-color: #e3f2fd;
+            color: #1976d2;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        .no-products {
+            text-align: center;
+            padding: 40px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            grid-column: 1 / -1;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🏸 Thiết bị Cầu lông</h1>
+        <a href="/products/new" class="add-product-btn">+ Thêm sản phẩm mới</a>
+    </header>
+    
+    <div class="products-container">
+        <% if (products.length === 0) { %>
+            <div class="no-products">
+                <h2>Chưa có sản phẩm nào</h2>
+                <p>Hãy thêm sản phẩm đầu tiên của bạn!</p>
+                <a href="/products/new" class="add-product-btn">Thêm sản phẩm mới</a>
+            </div>
+        <% } else { %>
+            <% products.forEach(product => { %>
+                <div class="product-card">
+                    <img src="<%= product.image %>" alt="<%= product.name %>" class="product-image">
+                    <div class="product-info">
+                        <h2 class="product-name"><%= product.name %></h2>
+                        <p class="product-description"><%= product.description %></p>
+                        <p class="product-price"><%= product.price.toLocaleString('vi-VN') %> VNĐ</p>
+                        <span class="product-category"><%= product.category %></span>
+                    </div>
+                </div>
+            <% }); %>
+        <% } %>
+    </div>
+</body>
+</html>
