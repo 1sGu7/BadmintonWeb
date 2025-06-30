@@ -9,8 +9,8 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Sử dụng cleanWorkspace trước khi checkout
-                cleanWs()
+                // Sử dụng deleteDir thay vì cleanWs để tránh lỗi quyền
+                deleteDir()
                 git branch: 'main', 
                 url: 'https://github.com/1sGu7/BadmintonWeb.git'
             }
@@ -25,8 +25,10 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh '''
-                # Dừng container cũ và triển khai mới
-                docker-compose down || true
+                # Dừng và xóa container cũ
+                docker-compose down -v --remove-orphans || true
+                
+                # Triển khai mới với volume
                 docker-compose up -d
                 '''
             }
@@ -35,11 +37,13 @@ pipeline {
         stage('Health Check') {
             steps {
                 retry(5) {
-                    sh '''
-                    echo "Checking application health..."
-                    curl -Ifs http://localhost:${APP_PORT}/products
-                    '''
-                    sleep 10
+                    script {
+                        sleep 15  // Tăng thời gian chờ
+                        sh '''
+                        echo "Checking application health..."
+                        curl -Is http://localhost:${APP_PORT}/products | head -1
+                        '''
+                    }
                 }
             }
         }
@@ -47,11 +51,11 @@ pipeline {
     
     post {
         always {
-            // Ghi log để debug nếu cần
+            // Ghi log để debug
             sh 'docker-compose logs --tail 100 web || true'
             sh 'docker-compose logs --tail 100 mongo || true'
             
-            // Sử dụng deleteDir thay vì cleanWs
+            // Sử dụng deleteDir an toàn
             deleteDir()
         }
         success {
@@ -59,7 +63,7 @@ pipeline {
         }
         failure {
             echo 'Deployment failed!'
-            sh 'docker-compose down || true'
+            sh 'docker-compose down -v || true'
         }
     }
 }
