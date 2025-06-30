@@ -4,7 +4,7 @@ pipeline {
     environment {
         MONGODB_URI = credentials('MONGODB_ATLAS_URI')
         APP_PORT = "3000"
-        DOMAIN = "your-domain.com" // Thay bằng domain của bạn
+        DOMAIN = "ec2-18-136-210-58.ap-southeast-1.compute.amazonaws.com" // Thay bằng domain của bạn
     }
 
     stages {
