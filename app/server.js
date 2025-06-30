@@ -36,6 +36,22 @@ app.use('/products', productRoutes);
 
 app.get('/', (req, res) => res.redirect('/products'));
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Khởi động server và xử lý shutdown
+const server = app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
-app.listen(PORT, () => console.log(`🚀 Server đang chạy trên port ${PORT}`));
+// Xử lý tín hiệu shutdown để giải phóng port
+process.on('SIGINT', () => {
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGTERM', () => {
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+});
